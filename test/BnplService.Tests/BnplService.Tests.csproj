@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable><IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="xunit" Version="2.8.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="8.10.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BnplService.Application/BnplService.Application.csproj" />
+    <ProjectReference Include="../../src/BnplService.Infrastructure/BnplService.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="BnplService.Domain.Entity.Common" />
+    <Using Include="BnplService.Domain.Entity.Settings" />
+    <Using Include="BnplService.Domain.Entity.Requests" />
+    <Using Include="BnplService.Domain.Entity.Payments" />
+    <Using Include="BnplService.Domain.Enums" />
+    <Using Include="BnplService.Domain.Exceptions" />
+    <Using Include="BnplService.Domain.Helpers" />
+    <Using Include="BnplService.Domain.Rules" />
+    <Using Include="BnplService.Contracts.Admin" />
+    <Using Include="BnplService.Contracts.Common" />
+    <Using Include="BnplService.Contracts.Payments" />
+    <Using Include="BnplService.Contracts.Providers" />
+    <Using Include="BnplService.Contracts.Requests" />
+    <Using Include="BnplService.Contracts.Settings" />
+    <Using Include="BnplService.Contracts.Persistence" />
+    <Using Include="BnplService.Application.Common" />
+    <Using Include="BnplService.Application.Authorization" />
+  </ItemGroup>
+</Project>

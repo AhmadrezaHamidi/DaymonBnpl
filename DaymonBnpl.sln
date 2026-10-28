@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9BE1B915-08CF-4FA2-8DA8-065E6BF87509}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BnplService.Application", "src\BnplService.Application\BnplService.Application.csproj", "{6D3FC270-B8E2-44F3-A728-5E1BEA1ED99D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BnplService.Contracts", "src\BnplService.Contracts\BnplService.Contracts.csproj", "{4D62C34C-10C2-450E-BF90-369F3C02DF96}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BnplService.Domain", "src\BnplService.Domain\BnplService.Domain.csproj", "{9CB31006-9A43-41E2-829B-D0F4D6850735}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BnplService.Infrastructure", "src\BnplService.Infrastructure\BnplService.Infrastructure.csproj", "{DCF25748-CB9C-4DE1-905C-4672CF0103BB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DayaDiamond.Client", "src\DayaDiamond.Client\DayaDiamond.Client.csproj", "{CF3D9FEB-D075-4B7D-AFD4-5AEDD53E013E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{B2DCFB02-9818-4AE3-970B-6A6DD343E78C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BnplService.Tests", "test\BnplService.Tests\BnplService.Tests.csproj", "{12C466DB-7A61-47DB-8A02-D20E5FB03146}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6D3FC270-B8E2-44F3-A728-5E1BEA1ED99D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D3FC270-B8E2-44F3-A728-5E1BEA1ED99D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D3FC270-B8E2-44F3-A728-5E1BEA1ED99D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D3FC270-B8E2-44F3-A728-5E1BEA1ED99D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D62C34C-10C2-450E-BF90-369F3C02DF96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D62C34C-10C2-450E-BF90-369F3C02DF96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D62C34C-10C2-450E-BF90-369F3C02DF96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D62C34C-10C2-450E-BF90-369F3C02DF96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CB31006-9A43-41E2-829B-D0F4D6850735}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CB31006-9A43-41E2-829B-D0F4D6850735}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CB31006-9A43-41E2-829B-D0F4D6850735}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CB31006-9A43-41E2-829B-D0F4D6850735}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCF25748-CB9C-4DE1-905C-4672CF0103BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCF25748-CB9C-4DE1-905C-4672CF0103BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCF25748-CB9C-4DE1-905C-4672CF0103BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCF25748-CB9C-4DE1-905C-4672CF0103BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF3D9FEB-D075-4B7D-AFD4-5AEDD53E013E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF3D9FEB-D075-4B7D-AFD4-5AEDD53E013E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF3D9FEB-D075-4B7D-AFD4-5AEDD53E013E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF3D9FEB-D075-4B7D-AFD4-5AEDD53E013E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12C466DB-7A61-47DB-8A02-D20E5FB03146}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12C466DB-7A61-47DB-8A02-D20E5FB03146}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12C466DB-7A61-47DB-8A02-D20E5FB03146}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12C466DB-7A61-47DB-8A02-D20E5FB03146}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6D3FC270-B8E2-44F3-A728-5E1BEA1ED99D} = {9BE1B915-08CF-4FA2-8DA8-065E6BF87509}
+		{4D62C34C-10C2-450E-BF90-369F3C02DF96} = {9BE1B915-08CF-4FA2-8DA8-065E6BF87509}
+		{9CB31006-9A43-41E2-829B-D0F4D6850735} = {9BE1B915-08CF-4FA2-8DA8-065E6BF87509}
+		{DCF25748-CB9C-4DE1-905C-4672CF0103BB} = {9BE1B915-08CF-4FA2-8DA8-065E6BF87509}
+		{CF3D9FEB-D075-4B7D-AFD4-5AEDD53E013E} = {9BE1B915-08CF-4FA2-8DA8-065E6BF87509}
+		{12C466DB-7A61-47DB-8A02-D20E5FB03146} = {B2DCFB02-9818-4AE3-970B-6A6DD343E78C}
+	EndGlobalSection
+EndGlobal

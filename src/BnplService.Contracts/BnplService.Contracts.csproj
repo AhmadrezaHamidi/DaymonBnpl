@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- قراردادهای ورودی/خروجی، پورت لایهٔ داده (IBnplDbContext) و پورت ارائه‌دهنده‌ها (دایادایموند، درگاه، نگهداری توکن). -->
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><RootNamespace>BnplService.Contracts</RootNamespace></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BnplService.Domain/BnplService.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="BnplService.Domain.Entity.Common" />
+    <Using Include="BnplService.Domain.Entity.Settings" />
+    <Using Include="BnplService.Domain.Entity.Requests" />
+    <Using Include="BnplService.Domain.Entity.Payments" />
+    <Using Include="BnplService.Domain.Enums" />
+    <Using Include="BnplService.Domain.Exceptions" />
+    <Using Include="BnplService.Domain.Helpers" />
+    <Using Include="BnplService.Domain.Rules" />
+  </ItemGroup>
+</Project>

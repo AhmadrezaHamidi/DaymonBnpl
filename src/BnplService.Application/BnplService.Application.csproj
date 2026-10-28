@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- لایهٔ Application: Handler/<بخش>/{Commands,Queries}/<نام>، Authorization، Common. مثل FacilityService.Application. -->
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><RootNamespace>BnplService.Application</RootNamespace></PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="MediatR" Version="12.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BnplService.Domain/BnplService.Domain.csproj" />
+    <ProjectReference Include="../BnplService.Contracts/BnplService.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="BnplService.Domain.Entity.Common" />
+    <Using Include="BnplService.Domain.Entity.Settings" />
+    <Using Include="BnplService.Domain.Entity.Requests" />
+    <Using Include="BnplService.Domain.Entity.Payments" />
+    <Using Include="BnplService.Domain.Enums" />
+    <Using Include="BnplService.Domain.Exceptions" />
+    <Using Include="BnplService.Domain.Helpers" />
+    <Using Include="BnplService.Domain.Rules" />
+    <Using Include="BnplService.Contracts.Admin" />
+    <Using Include="BnplService.Contracts.Common" />
+    <Using Include="BnplService.Contracts.Payments" />
+    <Using Include="BnplService.Contracts.Persistence" />
+    <Using Include="BnplService.Contracts.Providers" />
+    <Using Include="BnplService.Contracts.Requests" />
+    <Using Include="BnplService.Contracts.Settings" />
+    <Using Include="BnplService.Application.Common" />
+    <Using Include="BnplService.Application.Authorization" />
+    <Using Include="BnplService.Application.Handler.Shared" />
+    <Using Include="MediatR" />
+    <Using Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+</Project>
