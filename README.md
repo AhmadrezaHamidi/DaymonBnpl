@@ -13,6 +13,8 @@
 | `src/BnplService.Application` | Handlerهای MediatR برای مشتری، پنل ادمین و کار دوره‌ای (Maintenance) |
 | `src/BnplService.Infrastructure` | EF Core (SqlServer و Sqlite)، پیکربندی جدول‌ها و Seed |
 | `test/BnplService.Tests` | ۵۷ تست: محاسبات فیگما، قوانین، و سناریوهای کامل مشتری و ادمین روی SQLite درون‌حافظه |
+| `samples/DayaDiamond.Sample` | برنامهٔ نمونه‌ای که کل مسیر کلاینت دایادایموند را اجرا می‌کند |
+| `docs/` | مستند API دایادایموند، PDF فیگما، یادداشت‌ها و خروجی چت‌های پروژه |
 
 ## قوانین پیاده‌شده (از فیگما)
 
