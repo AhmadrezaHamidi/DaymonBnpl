@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ثبت وابستگی‌ها؛ مثل FacilityService.IoC و IdentityService.IoC -->
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><RootNamespace>BnplService.IoC</RootNamespace></PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BnplService.Application/BnplService.Application.csproj" />
+    <ProjectReference Include="../BnplService.Infrastructure/BnplService.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
