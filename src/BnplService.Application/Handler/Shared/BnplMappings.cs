@@ -39,7 +39,8 @@ public static class BnplMappings
 
     public static BnplRequestDetailsDto ToDetails(this BnplRequest r, DateOnly today) => new(
         r.ToListItem(today), r.MobileNumber, r.CustomerName, r.UpfrontFeePercent, r.LatePenaltyDailyPercent, r.UpfrontFee, r.TotalFee,
-        r.TotalRepayment, r.DiscountCode, r.DiscountAmount, r.TokenPrice, r.ActivatedAt is not null, r.OwnedTokenAmount, r.UnpaidDebt(today),
+        r.TotalRepayment, r.DiscountCode, r.DiscountAmount, r.TokenPrice, r.ActivatedAt is not null, r.OwnedTokenAmount,
+        r.CollateralPercent, r.CollateralTokenAmount, r.CollateralLocked, r.CollateralReleased, r.TokensDelivered, r.UnpaidDebt(today),
         r.PaidPercent, r.CloseReason,
         r.Installments.OrderBy(i => i.Number).Select(i => r.ToDto(i, today)).ToList(),
         r.History.OrderBy(h => h.At).ThenBy(h => h.Id)

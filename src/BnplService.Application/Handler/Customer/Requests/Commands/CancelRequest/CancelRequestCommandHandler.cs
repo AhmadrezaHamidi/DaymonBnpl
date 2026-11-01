@@ -2,7 +2,8 @@ using BnplService.Application.Handler.Customer.Requests.Shared;
 
 namespace BnplService.Application.Handler.Customer.Requests.Commands.CancelRequest;
 
-public sealed class CancelRequestCommandHandler(IBnplDbContext db, IBnplCurrentCustomer customer, TimeProvider time)
+public sealed class CancelRequestCommandHandler(IBnplDbContext db, IBnplCurrentCustomer customer, BnplPaymentProcessor processor,
+    TimeProvider time)
     : CustomerRequestHandlerBase(db, customer, time), IRequestHandler<CancelRequestCommand, BnplMessageResponse<BnplRequestDetailsDto>>
 {
     public async Task<BnplMessageResponse<BnplRequestDetailsDto>> Handle(CancelRequestCommand command, CancellationToken ct)
@@ -15,6 +16,8 @@ public sealed class CancelRequestCommandHandler(IBnplDbContext db, IBnplCurrentC
             throw new BnplDomainException("پرداخت قسط اول در جریان است؛ چند دقیقه بعد دوباره تلاش کنید.", 409);
         request.Cancel(Actor.Customer(Me), null, now);
         await Db.SaveChangesAsync(ct);
+        // قرارداد امضاشده ← آزادسازی وثیقه (اگر نشد، Worker دوباره تلاش می‌کند)
+        await processor.SyncCustodyAsync(request, CancellationToken.None);
         return Ok(request.ToDetails(Today), "درخواست قبلی لغو گردید و می‌توانید درخواست جدید ثبت نمایید.");
     }
 }

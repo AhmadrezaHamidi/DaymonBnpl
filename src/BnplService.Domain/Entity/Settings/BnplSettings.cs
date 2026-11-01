@@ -31,11 +31,16 @@ public class BnplSettings : VersionedEntity
     /// <summary>حداکثر قرارداد فعال هم‌زمان برای یک مشتری.</summary>
     public int MaxActiveContractsPerCustomer { get; private set; } = 3;
 
+    /// <summary>
+    /// توکن وثیقه به‌ازای اعتبار: درصد مبلغ پیش‌خرید که باید معادلش توکن آزاد نزد مشتری مسدود شود (۱۰۰ = هم‌ارزش مبلغ).
+    /// </summary>
+    public decimal CollateralPercent { get; private set; } = 100;
+
     public DateTime? UpdatedAt { get; private set; }
     public Actor? UpdatedBy { get; private set; }
 
     public void Update(bool isEnabled, long minAmount, long maxAmount, long amountStep, int completionHours, int activationMinutes,
-        int gatewayPaymentMinutes, int maxActiveContracts, Actor by, DateTime at)
+        int gatewayPaymentMinutes, int maxActiveContracts, decimal collateralPercent, Actor by, DateTime at)
     {
         if (minAmount <= 0 || maxAmount < minAmount) throw new BnplDomainException("بازهٔ مبلغ نامعتبر است (حداقل باید مثبت و کمتر از حداکثر باشد).");
         if (amountStep <= 0 || (maxAmount - minAmount) % amountStep != 0)
@@ -44,6 +49,7 @@ public class BnplSettings : VersionedEntity
         if (activationMinutes is < 5 or > 1440) throw new BnplDomainException("مهلت فعال‌سازی باید بین ۵ تا ۱۴۴۰ دقیقه باشد.");
         if (gatewayPaymentMinutes is < 5 or > 120) throw new BnplDomainException("مهلت پرداخت درگاهی باید بین ۵ تا ۱۲۰ دقیقه باشد.");
         if (maxActiveContracts is < 1 or > 100) throw new BnplDomainException("حداکثر قرارداد فعال باید بین ۱ تا ۱۰۰ باشد.");
+        if (collateralPercent is < 1 or > 500) throw new BnplDomainException("درصد وثیقه باید بین ۱ تا ۵۰۰ باشد.");
         IsEnabled = isEnabled;
         MinAmount = minAmount;
         MaxAmount = maxAmount;
@@ -52,6 +58,7 @@ public class BnplSettings : VersionedEntity
         ActivationMinutes = activationMinutes;
         GatewayPaymentMinutes = gatewayPaymentMinutes;
         MaxActiveContractsPerCustomer = maxActiveContracts;
+        CollateralPercent = collateralPercent;
         UpdatedAt = at;
         UpdatedBy = by;
         Bump();

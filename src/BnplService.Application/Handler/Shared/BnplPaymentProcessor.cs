@@ -6,7 +6,7 @@ namespace BnplService.Application.Handler.Shared;
 /// اعمال پرداخت موفق روی قرارداد، مشترک بین کال‌بک درگاه، پرداخت توکنی، ثبت دستی ادمین و Worker:
 ///  - قسط اول ← فعال‌سازی با قیمت لحظه‌ای توکن، شمارش کد تخفیف
 ///  - قسط دیگر قابل پرداخت نیست (لغو/انقضا/قبلاً پرداخت‌شده) ← پرداخت «نیازمند برگشت وجه»
-///  - بعد از ذخیره: مسدودسازی/آزادسازی توکن‌ها نزد دایادایموند (اگر نشد، Worker دوباره تلاش می‌کند)
+///  - بعد از ذخیره: واریز توکن خریده‌شده و آزادسازی وثیقه نزد دایادایموند (اگر نشد، Worker دوباره تلاش می‌کند)
 /// </summary>
 public sealed class BnplPaymentProcessor(IBnplDbContext db, ITokenPriceProvider prices, ITokenCustody custody, TimeProvider time,
     ILogger<BnplPaymentProcessor> logger)
@@ -50,17 +50,16 @@ public sealed class BnplPaymentProcessor(IBnplDbContext db, ITokenPriceProvider 
         try
         {
             var changed = false;
-            if (request.ActivatedAt is not null && !request.TokensLocked
-                && request.Status is BnplRequestStatus.Active or BnplRequestStatus.Settled)
+            if (request.NeedsTokenDelivery)
             {
-                await custody.LockAsync(request.MobileNumber, request.ContractNumber, request.TokenAmount, ct);
-                request.MarkTokensLocked();
+                await custody.CreditAsync(request.MobileNumber, request.ContractNumber, request.TokenAmount, ct);
+                request.MarkTokensDelivered();
                 changed = true;
             }
-            if (request.Status == BnplRequestStatus.Settled && request.TokensLocked && !request.TokensReleased)
+            if (request.NeedsCollateralRelease)
             {
-                await custody.ReleaseAsync(request.MobileNumber, request.ContractNumber, request.TokenAmount, ct);
-                request.MarkTokensReleased();
+                await custody.ReleaseAsync(request.MobileNumber, request.ContractNumber, request.CollateralTokenAmount, ct);
+                request.MarkCollateralReleased();
                 changed = true;
             }
             if (changed) await db.SaveChangesAsync(ct);

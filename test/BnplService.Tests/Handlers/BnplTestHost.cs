@@ -155,7 +155,9 @@ public sealed class FakeCustody : ITokenCustody
 {
     public decimal FreeBalance { get; set; } = 100;
     public bool FailLock { get; set; }
+    public bool FailCredit { get; set; }
     public List<(string Contract, decimal Tokens)> Locked { get; } = [];
+    public List<(string Contract, decimal Tokens)> Credited { get; } = [];
     public List<(string Contract, decimal Tokens)> Released { get; } = [];
     public List<(string Contract, decimal Tokens)> Debited { get; } = [];
 
@@ -164,13 +166,24 @@ public sealed class FakeCustody : ITokenCustody
     public Task LockAsync(string mobileNumber, string contractNumber, decimal tokenAmount, CancellationToken ct)
     {
         if (FailLock) throw new BnplProviderException("دایادایموند در دسترس نیست.");
+        if (FreeBalance < tokenAmount) throw new BnplProviderException("موجودی آزاد کافی نیست.");
+        FreeBalance -= tokenAmount;
         Locked.Add((contractNumber, tokenAmount));
         return Task.CompletedTask;
     }
 
     public Task ReleaseAsync(string mobileNumber, string contractNumber, decimal tokenAmount, CancellationToken ct)
     {
+        FreeBalance += tokenAmount;
         Released.Add((contractNumber, tokenAmount));
+        return Task.CompletedTask;
+    }
+
+    public Task CreditAsync(string mobileNumber, string contractNumber, decimal tokenAmount, CancellationToken ct)
+    {
+        if (FailCredit) throw new BnplProviderException("دایادایموند در دسترس نیست.");
+        FreeBalance += tokenAmount;
+        Credited.Add((contractNumber, tokenAmount));
         return Task.CompletedTask;
     }
 

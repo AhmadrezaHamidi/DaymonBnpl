@@ -77,6 +77,9 @@ public class AdminTests
         var terminated = await host.Ok(new TerminateRequestCommand
             { Id = active.Summary.Id, Reason = "عدم پرداخت اقساط", RowVersion = details.Details.Summary.RowVersion });
         Assert.Equal(BnplRequestStatus.Terminated, terminated.Details.Summary.Status);
+        // نکول ← وثیقه مسدود می‌ماند تا ادمین تعیین تکلیف کند
+        Assert.Empty(host.Custody.Released);
+        Assert.False(terminated.Details.CollateralReleased);
         Assert.Equal("ادمین تست", terminated.Details.History.Last().By.Name);
 
         var pay = await host.Send(new StartPaymentCommand { RequestId = active.Summary.Id, InstallmentNumber = 2, GatewayId = 5 });
@@ -142,6 +145,7 @@ public class AdminTests
         Assert.Equal(11 * 4_916_660, d.OutstandingTotal);
         Assert.Equal(2, d.NewRequestsToday);
         Assert.Equal(1, d.ActivatedToday);
+        Assert.Equal(3.332m, d.LockedTokens);
         Assert.Equal(1, d.ByStatus.Single(s => s.Status == BnplRequestStatus.Draft).Count);
     }
 

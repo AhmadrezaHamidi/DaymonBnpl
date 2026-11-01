@@ -11,6 +11,7 @@ public sealed class BnplSettingsConfiguration : IEntityTypeConfiguration<BnplSet
         Versioned(e);
         e.Property(x => x.Id).ValueGeneratedNever();
         ActorColumn(e.Property(x => x.UpdatedBy));
+        Percent(e.Property(x => x.CollateralPercent));
     }
 }
 

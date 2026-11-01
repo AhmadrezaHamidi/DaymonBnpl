@@ -8,7 +8,7 @@ public sealed record MaintenanceResultDto(int ExpiredRequests, int VerifiedPayme
 /// کار دوره‌ای (BnplMaintenanceWorker، هر دقیقه):
 ///  ۱) پرداخت‌های درگاهیِ مهلت‌گذشته که کال‌بکشان نرسید ← استعلام از درگاه و اعمال نتیجه
 ///  ۲) درخواست‌های تکمیل‌نشدهٔ مهلت‌گذشته ← منقضی
-///  ۳) قراردادهایی که توکنشان مسدود/آزاد نشده ← تلاش دوباره نزد دایادایموند
+///  ۳) قراردادهایی که توکن خریده‌شده‌شان واریز یا وثیقه‌شان آزاد نشده ← تلاش دوباره نزد دایادایموند
 /// </summary>
 public sealed record RunMaintenanceCommand(int BatchSize = 100) : BnplBaseCommand<MaintenanceResultDto>;
 
@@ -44,13 +44,13 @@ public sealed class RunMaintenanceCommandHandler(IBnplDbContext db, BnplGatewayV
         if (expired > 0) await Db.SaveChangesAsync(ct);
 
         var synced = 0;
-        foreach (var r in await Db.Requests.Where(r => r.ActivatedAt != null
-                         && ((!r.TokensLocked && (r.Status == BnplRequestStatus.Active || r.Status == BnplRequestStatus.Settled))
-                             || (r.Status == BnplRequestStatus.Settled && r.TokensLocked && !r.TokensReleased)))
+        foreach (var r in await Db.Requests.Where(r => (r.ActivatedAt != null && !r.TokensDelivered)
+                             || (r.CollateralLocked && !r.CollateralReleased && (r.Status == BnplRequestStatus.Settled
+                                 || r.Status == BnplRequestStatus.Cancelled || r.Status == BnplRequestStatus.Expired)))
                      .OrderBy(r => r.Id).Take(command.BatchSize).ToListAsync(ct))
         {
             await processor.SyncCustodyAsync(r, ct);
-            if (r.TokensLocked && (r.Status != BnplRequestStatus.Settled || r.TokensReleased)) synced++;
+            if (!r.NeedsTokenDelivery && !r.NeedsCollateralRelease) synced++;
         }
 
         return new MaintenanceResultDto(expired, verified, synced);

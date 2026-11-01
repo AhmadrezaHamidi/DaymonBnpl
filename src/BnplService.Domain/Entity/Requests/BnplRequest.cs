@@ -4,7 +4,9 @@ namespace BnplService.Domain.Entity.Requests;
 
 /// <summary>
 /// درخواست/قرارداد پیش‌خرید اقساطی (aggregate). مبلغ‌ها و درصدهای طرح لحظهٔ ثبت روی همین ردیف کپی می‌شوند.
-/// تعداد توکن تا پرداخت قسط اول تخمینی است و «بر اساس نرخ توکن در زمان پرداخت قسط اول» قطعی می‌شود.
+/// مدل وثیقه: مشتری توکن آزاد خودش را وثیقه می‌گذارد؛ با امضا وثیقه مسدود و اعتبار خرید ایجاد می‌شود.
+/// با پرداخت قسط اول، با این اعتبار توکن جدید خریده و به حساب مشتری واریز می‌شود
+/// (تعداد «بر اساس نرخ توکن در زمان پرداخت قسط اول» قطعی می‌شود). وثیقه پس از تسویه آزاد می‌شود.
 /// </summary>
 public class BnplRequest : VersionedEntity
 {
@@ -38,7 +40,14 @@ public class BnplRequest : VersionedEntity
 
     /// <summary>قیمت هر توکن (ریال): تا فعال‌سازی آخرین قیمت دیده‌شده، بعد از آن قیمت قطعی قرارداد.</summary>
     public long TokenPrice { get; private set; }
+    /// <summary>توکنی که با اعتبار خریده می‌شود (تا فعال‌سازی تخمینی).</summary>
     public decimal TokenAmount { get; private set; }
+
+    /// <summary>درصد وثیقه از مبلغ پیش‌خرید (کپی تنظیمات لحظهٔ ثبت).</summary>
+    public decimal CollateralPercent { get; private set; }
+
+    /// <summary>توکن وثیقهٔ لازم؛ تا امضا تخمینی است و با قیمت لحظهٔ امضا قطعی می‌شود.</summary>
+    public decimal CollateralTokenAmount { get; private set; }
 
     public BnplRequestStatus Status { get; private set; } = BnplRequestStatus.Draft;
     public DateTime CreatedAt { get; private set; }
@@ -59,11 +68,14 @@ public class BnplRequest : VersionedEntity
     public DateTime? ClosedAt { get; private set; }
     public string? CloseReason { get; private set; }
 
-    /// <summary>توکن‌های قرارداد نزد دایادایموند مسدود شد؟ (بعد از فعال‌سازی؛ اگر نشد، Worker دوباره تلاش می‌کند)</summary>
-    public bool TokensLocked { get; private set; }
+    /// <summary>توکن وثیقه نزد دایادایموند مسدود شد؟ (هم‌زمان با امضا)</summary>
+    public bool CollateralLocked { get; private set; }
 
-    /// <summary>توکن‌ها پس از تسویه آزاد شد؟</summary>
-    public bool TokensReleased { get; private set; }
+    /// <summary>وثیقه پس از تسویه یا لغو/انقضای قرارداد امضاشده آزاد شد؟ (اگر نشد، Worker دوباره تلاش می‌کند)</summary>
+    public bool CollateralReleased { get; private set; }
+
+    /// <summary>توکن‌های خریده‌شده با اعتبار به حساب مشتری واریز شد؟ (بعد از فعال‌سازی؛ اگر نشد، Worker دوباره تلاش می‌کند)</summary>
+    public bool TokensDelivered { get; private set; }
 
     public List<Installment> Installments { get; private set; } = [];
     public List<BnplRequestHistory> History { get; private set; } = [];
@@ -99,6 +111,7 @@ public class BnplRequest : VersionedEntity
             PlanTitle = plan.Title,
             CreatedAt = now,
             ExpiresAt = now.AddHours(settings.CompletionHours),
+            CollateralPercent = settings.CollateralPercent,
         };
         r.ApplyQuote(quote);
         for (var n = 1; n <= quote.InstallmentCount; n++)
@@ -136,12 +149,30 @@ public class BnplRequest : VersionedEntity
         Bump();
     }
 
-    /// <summary>«تأیید و امضای قرارداد» ← مهلت پرداخت قسط اول شروع می‌شود.</summary>
-    public void Sign(Actor by, DateTime now, int activationMinutes)
+    /// <summary>توکن وثیقهٔ لازم برای مبلغ، با قیمت داده‌شده (رند به بالا).</summary>
+    public static decimal RequiredCollateral(long amount, decimal collateralPercent, long tokenPriceRial) =>
+        Money.TokensToPay(Money.Percent(amount, collateralPercent), tokenPriceRial);
+
+    /// <summary>کمبود توکن آزاد برای وثیقه (صفر یعنی کافی است).</summary>
+    public decimal CollateralShortfall(decimal freeBalance) => Math.Max(0, CollateralTokenAmount - freeBalance);
+
+    /// <summary>
+    /// «تأیید و امضای قرارداد»: وثیقه با قیمت همین لحظه قطعی و موجودی آزاد مشتری چک می‌شود؛ مهلت پرداخت قسط اول شروع می‌شود.
+    /// مسدودسازی خود توکن‌ها با فراخوان است (بعد از آن <see cref="MarkCollateralLocked"/>).
+    /// </summary>
+    public void Sign(Actor by, DateTime now, int activationMinutes, long tokenPriceNow, decimal freeBalance)
     {
         EnsureNotExpired(now);
         if (Status == BnplRequestStatus.Draft) throw new BnplDomainException("اول شرایط پیش‌خرید را تأیید کنید.");
         if (Status != BnplRequestStatus.TermsAccepted) throw new BnplDomainException("این قرارداد قبلاً امضا شده است.");
+        TokenPrice = tokenPriceNow;
+        TokenAmount = Money.Tokens(Amount, TokenPrice);
+        CollateralTokenAmount = RequiredCollateral(Amount, CollateralPercent, TokenPrice);
+        var shortfall = CollateralShortfall(freeBalance);
+        if (shortfall > 0)
+            throw new BnplDomainException(
+                $"برای وثیقه {PersianNumber.Of(CollateralTokenAmount)} توکن لازم است و موجودی آزاد شما {PersianNumber.Of(freeBalance)} توکن است؛ " +
+                $"تعداد {PersianNumber.Of(shortfall)} توکن کم دارید. ابتدا توکن بخرید.", 412);
         SignedAt = now;
         ActivationDeadline = now.AddMinutes(activationMinutes);
         Transition(BnplRequestStatus.Signed, by, now, "امضای قرارداد");
@@ -262,17 +293,36 @@ public class BnplRequest : VersionedEntity
         Bump();
     }
 
-    public void MarkTokensLocked()
+    // ── وثیقه و تحویل توکن ──
+
+    public void MarkCollateralLocked()
     {
-        if (ActivatedAt is null) throw new InvalidOperationException("قرارداد فعال نشده است.");
-        TokensLocked = true;
+        if (Status != BnplRequestStatus.Signed || CollateralLocked) throw new InvalidOperationException("وثیقه فقط یک بار و هنگام امضا مسدود می‌شود.");
+        CollateralLocked = true;
         Bump();
     }
 
-    public void MarkTokensReleased()
+    /// <summary>
+    /// وثیقه آزاد شود؟ پس از تسویه، یا اگر قرارداد امضاشده لغو/منقضی شد.
+    /// قرارداد خاتمه‌یافته (نکول) وثیقه‌اش مسدود می‌ماند تا ادمین تعیین تکلیف کند.
+    /// </summary>
+    public bool NeedsCollateralRelease => CollateralLocked && !CollateralReleased
+        && Status is BnplRequestStatus.Settled or BnplRequestStatus.Cancelled or BnplRequestStatus.Expired;
+
+    public void MarkCollateralReleased()
     {
-        if (Status != BnplRequestStatus.Settled || !TokensLocked) throw new InvalidOperationException("فقط توکن مسدودشدهٔ قرارداد تسویه‌شده آزاد می‌شود.");
-        TokensReleased = true;
+        if (!NeedsCollateralRelease) throw new InvalidOperationException("وثیقهٔ این قرارداد قابل آزادسازی نیست.");
+        CollateralReleased = true;
+        Bump();
+    }
+
+    /// <summary>توکن‌های خریده‌شده هنوز به حساب مشتری واریز نشده؟</summary>
+    public bool NeedsTokenDelivery => ActivatedAt is not null && !TokensDelivered;
+
+    public void MarkTokensDelivered()
+    {
+        if (!NeedsTokenDelivery) throw new InvalidOperationException("توکنی برای واریز نیست.");
+        TokensDelivered = true;
         Bump();
     }
 
@@ -311,6 +361,7 @@ public class BnplRequest : VersionedEntity
         DiscountAmount = quote.DiscountAmount;
         TokenPrice = quote.TokenPrice;
         TokenAmount = quote.TokenAmount;
+        CollateralTokenAmount = RequiredCollateral(Amount, CollateralPercent, TokenPrice);
     }
 
     private void EnsureNotExpired(DateTime now)

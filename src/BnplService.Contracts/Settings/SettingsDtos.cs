@@ -2,10 +2,10 @@ namespace BnplService.Contracts.Settings;
 
 public sealed record BnplSettingsDto(
     bool IsEnabled, long MinAmount, long MaxAmount, long AmountStep, int CompletionHours, int ActivationMinutes,
-    int GatewayPaymentMinutes, int MaxActiveContractsPerCustomer, DateTime? UpdatedAt, string? UpdatedBy, string RowVersion)
+    int GatewayPaymentMinutes, int MaxActiveContractsPerCustomer, decimal CollateralPercent, DateTime? UpdatedAt, string? UpdatedBy, string RowVersion)
 {
     public static BnplSettingsDto Of(BnplSettings s) => new(s.IsEnabled, s.MinAmount, s.MaxAmount, s.AmountStep, s.CompletionHours,
-        s.ActivationMinutes, s.GatewayPaymentMinutes, s.MaxActiveContractsPerCustomer, s.UpdatedAt, s.UpdatedBy?.Name, s.RowVersion);
+        s.ActivationMinutes, s.GatewayPaymentMinutes, s.MaxActiveContractsPerCustomer, s.CollateralPercent, s.UpdatedAt, s.UpdatedBy?.Name, s.RowVersion);
 }
 
 public sealed record PlanDto(int Id, string Title, int InstallmentCount, decimal FeePercent, decimal UpfrontFeePercent,

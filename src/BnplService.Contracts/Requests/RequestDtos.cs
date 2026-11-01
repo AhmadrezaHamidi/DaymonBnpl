@@ -11,14 +11,16 @@ public sealed record BnplConfigDto(bool IsEnabled, long MinAmount, long MaxAmoun
 public sealed record QuoteDto(
     long Amount, int InstallmentCount, decimal FeePercent, decimal UpfrontFeePercent, decimal LatePenaltyDailyPercent,
     long InstallmentAmount, long FirstInstallmentAmount, long LastInstallmentAmount, long UpfrontFee, long TotalFee,
-    long DiscountAmount, long TotalRepayment, long TokenPrice, decimal TokenAmount)
+    long DiscountAmount, long TotalRepayment, long TokenPrice, decimal TokenAmount, decimal CollateralPercent, decimal CollateralTokenAmount)
 {
     /// <summary>«تاریخ اولین قسط: زمان عقد قرارداد».</summary>
     public string FirstInstallmentDate => "زمان عقد قرارداد";
 
-    public static QuoteDto Of(BnplQuote q) => new(q.Amount, q.InstallmentCount, q.FeePercent, q.UpfrontFeePercent, q.LatePenaltyDailyPercent,
-        q.InstallmentAmount, q.FirstInstallmentAmount, q.LastInstallmentAmount, q.UpfrontFee, q.TotalFee, q.DiscountAmount,
-        q.TotalRepayment, q.TokenPrice, q.TokenAmount);
+    /// <summary>توکن وثیقه با قیمت لحظه‌ای تخمین زده می‌شود و هنگام امضا قطعی می‌شود.</summary>
+    public static QuoteDto Of(BnplQuote q, decimal collateralPercent) => new(q.Amount, q.InstallmentCount, q.FeePercent, q.UpfrontFeePercent,
+        q.LatePenaltyDailyPercent, q.InstallmentAmount, q.FirstInstallmentAmount, q.LastInstallmentAmount, q.UpfrontFee, q.TotalFee,
+        q.DiscountAmount, q.TotalRepayment, q.TokenPrice, q.TokenAmount, collateralPercent,
+        BnplRequest.RequiredCollateral(q.Amount, collateralPercent, q.TokenPrice));
 }
 
 public sealed record NextInstallmentDto(int Number, string Title, long Amount, long Penalty, long Total, DateOnly DueDate, string DueDateJalali,
@@ -53,8 +55,19 @@ public sealed record BnplRequestDetailsDto(
     long TokenPrice,
     bool IsTokenAmountFinal,
     decimal OwnedTokenAmount,
+    decimal CollateralPercent,
+    decimal CollateralTokenAmount,
+    bool CollateralLocked,
+    bool CollateralReleased,
+    bool TokensDelivered,
     long UnpaidDebt,
     int PaidPercent,
     string? CloseReason,
     IReadOnlyList<InstallmentDto> Installments,
     IReadOnlyList<HistoryDto> History);
+
+/// <summary>
+/// «ادامه» در درخواست ناتمام: توکن آزاد برای وثیقه کافی است؟ اگر نه، پیام «تعداد n توکن کم دارید» و مسیر خرید توکن.
+/// </summary>
+public sealed record CollateralStatusDto(decimal RequiredTokens, decimal FreeBalance, decimal Shortfall, bool IsEnough, bool IsLocked,
+    long TokenPrice, string? Message);

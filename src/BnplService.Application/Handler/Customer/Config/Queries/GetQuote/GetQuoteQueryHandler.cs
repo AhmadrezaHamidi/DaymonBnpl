@@ -10,7 +10,7 @@ public sealed class GetQuoteQueryHandler(IBnplDbContext db, ITokenPriceProvider 
         var plan = await ActivePlanAsync(Db, request.PlanId, ct);
         var discount = await DiscountAsync(request.DiscountCode, ct);
         var price = await prices.GetAsync(ct);
-        return Ok(QuoteDto.Of(BnplQuote.Calculate(request.Amount, plan, price.PriceRial, discount)));
+        return Ok(QuoteDto.Of(BnplQuote.Calculate(request.Amount, plan, price.PriceRial, discount), settings.CollateralPercent));
     }
 
     /// <summary>طرح فعال با شناسه، یا اولین طرح فعال وقتی شناسه نیامده.</summary>

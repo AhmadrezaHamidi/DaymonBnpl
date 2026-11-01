@@ -9,10 +9,12 @@ using BnplService.Application.Handler.Customer.Requests.Commands.ApplyDiscount;
 using BnplService.Application.Handler.Customer.Requests.Commands.CancelRequest;
 using BnplService.Application.Handler.Customer.Requests.Commands.CreateRequest;
 using BnplService.Application.Handler.Customer.Requests.Commands.SignContract;
+using BnplService.Application.Handler.Customer.Requests.Queries.GetCollateralStatus;
 using BnplService.Application.Handler.Customer.Requests.Queries.GetIncompleteRequest;
 using BnplService.Application.Handler.Customer.Requests.Queries.GetMyRequest;
 using BnplService.Application.Handler.Customer.Requests.Queries.SearchMyRequests;
 using BnplService.Application.Handler.Admin.Discounts.Commands.SaveDiscount;
+using BnplService.Application.Handler.Maintenance.Commands.RunMaintenance;
 using Microsoft.EntityFrameworkCore;
 
 namespace BnplService.Tests.Handlers;
@@ -58,6 +60,8 @@ public class CustomerFlowTests
         var quote = await host.Ok(new GetQuoteQuery { Amount = 50_000_000 });
         Assert.Equal(6_916_660, quote.FirstInstallmentAmount);
         Assert.Equal(3.331m, quote.TokenAmount);
+        Assert.Equal(100, quote.CollateralPercent);
+        Assert.Equal(3.332m, quote.CollateralTokenAmount);   // وثیقه رند به بالا
     }
 
     [Fact]
@@ -78,6 +82,12 @@ public class CustomerFlowTests
         Assert.Equal(BnplRequestStatus.Signed, signed.Summary.Status);
         Assert.Equal(BnplTestHost.Start.UtcDateTime.AddMinutes(30), signed.Summary.Deadline);
 
+        // امضا ← وثیقه از موجودی آزاد مشتری مسدود می‌شود
+        Assert.True(signed.CollateralLocked);
+        Assert.Equal(3.332m, signed.CollateralTokenAmount);
+        Assert.Equal((signed.Summary.ContractNumber, 3.332m), Assert.Single(host.Custody.Locked));
+        Assert.Equal(100 - 3.332m, host.Custody.FreeBalance);
+
         // قیمت تا لحظهٔ پرداخت قسط اول عوض شد ← تعداد توکن با قیمت لحظهٔ فعال‌سازی قطعی می‌شود
         host.Price.PriceRial = 16_000_000;
         var first = await PayByGatewayAsync(host, id, 1);
@@ -94,7 +104,10 @@ public class CustomerFlowTests
         Assert.Equal(1, active.Summary.PaidCount);
         Assert.Equal(8, active.PaidPercent);
         Assert.Equal(11 * 4_916_660, active.UnpaidDebt);
-        Assert.Equal(("" + active.Summary.ContractNumber, 3.125m), Assert.Single(host.Custody.Locked));
+        // قسط اول ← با اعتبار، توکن جدید با قیمت همین لحظه خریده و به حساب مشتری واریز می‌شود
+        Assert.True(active.TokensDelivered);
+        Assert.Equal((active.Summary.ContractNumber, 3.125m), Assert.Single(host.Custody.Credited));
+        Assert.Empty(host.Custody.Released);
         Assert.Equal(BnplClock.ToTehranDate(BnplTestHost.Start.UtcDateTime), active.Installments[0].DueDate);
         Assert.Equal(Jalali.AddMonths(active.Installments[0].DueDate, 11), active.Summary.EndDate);
 
@@ -110,7 +123,8 @@ public class CustomerFlowTests
         Assert.Equal(BnplRequestStatus.Settled, settled.Summary.Status);
         Assert.Equal(0, settled.UnpaidDebt);
         Assert.Equal(settled.Summary.TokenAmount, settled.OwnedTokenAmount);
-        Assert.Single(host.Custody.Released);
+        Assert.True(settled.CollateralReleased);
+        Assert.Equal((settled.Summary.ContractNumber, 3.332m), Assert.Single(host.Custody.Released));
 
         var history = await host.Ok(new SearchMyRequestsQuery { Filter = MyRequestsFilter.Settled });
         Assert.Equal(id, Assert.Single(history.Items).Id);
@@ -322,18 +336,89 @@ public class CustomerFlowTests
     }
 
     [Fact]
-    public async Task Token_lock_failure_does_not_block_activation_and_is_retried_later()
+    public async Task Continue_shows_the_collateral_shortfall_and_sign_is_refused()
     {
         await using var host = await BnplTestHost.CreateAsync();
+        host.Custody.FreeBalance = 1;
+        var created = await host.Ok(new CreateRequestCommand { Amount = 50_000_000 });
+
+        var status = await host.Ok(new GetCollateralStatusQuery(created.Summary.Id));
+        Assert.False(status.IsEnough);
+        Assert.Equal(3.332m, status.RequiredTokens);
+        Assert.Equal(2.332m, status.Shortfall);
+        Assert.Equal("تعداد ۲٫۳۳۲ توکن کم دارید، برای خرید به درگاه پرداخت منتقل می‌شوید.", status.Message);
+
+        await host.Ok(new AcceptTermsCommand { Id = created.Summary.Id });
+        var sign = await host.Send(new SignContractCommand { Id = created.Summary.Id });
+        Assert.Equal(412, sign.StatusCode);
+        Assert.Contains("تعداد ۲٫۳۳۲ توکن کم دارید", sign.Message);
+        Assert.Empty(host.Custody.Locked);
+        Assert.Equal(BnplRequestStatus.TermsAccepted, (await host.Ok(new GetMyRequestQuery(created.Summary.Id))).Summary.Status);
+
+        // مشتری توکن خرید و برگشت
+        host.Custody.FreeBalance = 5;
+        Assert.True((await host.Ok(new GetCollateralStatusQuery(created.Summary.Id))).IsEnough);
+        var signed = await host.Ok(new SignContractCommand { Id = created.Summary.Id });
+        Assert.True(signed.CollateralLocked);
+        var locked = await host.Ok(new GetCollateralStatusQuery(created.Summary.Id));
+        Assert.True(locked.IsLocked);
+        Assert.Null(locked.Message);
+    }
+
+    [Fact]
+    public async Task Collateral_lock_failure_keeps_the_contract_unsigned()
+    {
+        await using var host = await BnplTestHost.CreateAsync();
+        var created = await host.Ok(new CreateRequestCommand { Amount = 50_000_000 });
+        await host.Ok(new AcceptTermsCommand { Id = created.Summary.Id });
         host.Custody.FailLock = true;
+        Assert.Equal(502, (await host.Send(new SignContractCommand { Id = created.Summary.Id })).StatusCode);
+        var request = await host.Ok(new GetMyRequestQuery(created.Summary.Id));
+        Assert.Equal(BnplRequestStatus.TermsAccepted, request.Summary.Status);
+        Assert.False(request.CollateralLocked);
+    }
+
+    [Fact]
+    public async Task Cancelling_a_signed_contract_releases_the_collateral()
+    {
+        await using var host = await BnplTestHost.CreateAsync();
+        var signed = await SignedAsync(host);
+        var cancelled = await host.Ok(new CancelRequestCommand { Id = signed.Summary.Id });
+        Assert.True(cancelled.CollateralReleased);
+        Assert.Equal((signed.Summary.ContractNumber, 3.332m), Assert.Single(host.Custody.Released));
+        Assert.Equal(100, host.Custody.FreeBalance);
+        Assert.Empty(host.Custody.Credited);
+    }
+
+    [Fact]
+    public async Task Expired_signed_contract_releases_the_collateral_in_maintenance()
+    {
+        await using var host = await BnplTestHost.CreateAsync();
+        var signed = await SignedAsync(host);
+        host.Time.Advance(TimeSpan.FromMinutes(31));
+        var result = await host.Send(new RunMaintenanceCommand());
+        Assert.Equal(1, result.ExpiredRequests);
+        Assert.Equal(1, result.CustodySynced);
+        Assert.Single(host.Custody.Released);
+        var expired = await host.Ok(new GetMyRequestQuery(signed.Summary.Id));
+        Assert.Equal(BnplRequestStatus.Expired, expired.Summary.Status);
+        Assert.True(expired.CollateralReleased);
+    }
+
+    [Fact]
+    public async Task Token_delivery_failure_does_not_block_activation_and_is_retried_later()
+    {
+        await using var host = await BnplTestHost.CreateAsync();
+        host.Custody.FailCredit = true;
         var active = await ActiveAsync(host);
         Assert.Equal(BnplRequestStatus.Active, active.Summary.Status);
-        Assert.Empty(host.Custody.Locked);
-        Assert.False(await host.Db(db => db.Requests.Where(r => r.Id == active.Summary.Id).Select(r => r.TokensLocked).SingleAsync()));
+        Assert.False(active.TokensDelivered);
+        Assert.Empty(host.Custody.Credited);
 
-        host.Custody.FailLock = false;
-        var result = await host.Send(new BnplService.Application.Handler.Maintenance.Commands.RunMaintenance.RunMaintenanceCommand());
+        host.Custody.FailCredit = false;
+        var result = await host.Send(new RunMaintenanceCommand());
         Assert.Equal(1, result.CustodySynced);
-        Assert.Single(host.Custody.Locked);
+        Assert.Single(host.Custody.Credited);
+        Assert.True((await host.Ok(new GetMyRequestQuery(active.Summary.Id))).TokensDelivered);
     }
 }

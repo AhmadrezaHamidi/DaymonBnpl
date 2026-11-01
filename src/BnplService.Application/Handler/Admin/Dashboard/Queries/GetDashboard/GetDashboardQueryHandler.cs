@@ -29,7 +29,7 @@ public sealed class GetDashboardQueryHandler(IBnplDbContext db, TimeProvider tim
             collectedPenalty,
             active.Sum(r => r.UnpaidDebt(today)),
             overdue.Sum(r => r.Installments.Where(i => !i.IsPaid && i.DueDate < today).Sum(i => i.Amount + r.PenaltyOf(i, today))),
-            active.Where(r => r.TokensLocked).Sum(r => r.TokenAmount),
+            active.Where(r => r.CollateralLocked && !r.CollateralReleased).Sum(r => r.CollateralTokenAmount),
             await refunds.CountAsync(ct),
             await refunds.SumAsync(p => (long?)(p.Amount + p.Penalty), ct) ?? 0,
             await Db.Requests.CountAsync(r => r.CreatedAt >= start && r.CreatedAt < end, ct),

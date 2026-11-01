@@ -54,19 +54,28 @@ public sealed record GatewayPaymentStartDto(string ProviderReference, string Pay
 public sealed record GatewayPaymentResultDto(bool IsPaid, string? TrackingNumber, string? FailureReason);
 
 /// <summary>
-/// نگهداری توکن‌های قرارداد نزد دایادایموند: «پس از تأیید و امضای قرارداد توکن‌ها تا پایان اقساط در حساب شما مسدود می‌شود»
-/// و «پرداخت توکنی» قسط. ⚠ این سرویس‌ها در مستند فعلی دایادایموند نیستند؛ پیاده‌سازی واقعی منتظر مستند است.
+/// حساب توکن مشتری نزد دایادایموند:
+///  - وثیقه: «پس از تأیید و امضای قرارداد، توکن‌ها تا پایان اقساط مسدود می‌شوند و قابل برداشت یا وثیقه‌گذاری مجدد نیستند»
+///  - واریز توکن‌هایی که با اعتبار پیش‌خرید خریده شده‌اند
+///  - «پرداخت توکنی» قسط
+/// ⚠ این سرویس‌ها در مستند فعلی دایادایموند نیستند؛ پیاده‌سازی واقعی منتظر مستند است.
 /// </summary>
 public interface ITokenCustody
 {
-    /// <summary>موجودی آزاد توکن مشتری (برای پرداخت توکنی).</summary>
+    /// <summary>موجودی آزاد (غیرمسدود) توکن مشتری: برای وثیقه و پرداخت توکنی.</summary>
     Task<decimal> GetFreeBalanceAsync(string mobileNumber, CancellationToken ct);
 
-    /// <summary>واریز و مسدودسازی توکن‌های قرارداد هنگام فعال‌سازی.</summary>
+    /// <summary>مسدودسازی توکن وثیقه از موجودی آزاد مشتری هنگام امضا. با contractNumber تکراری نباید دوباره مسدود کند.</summary>
     Task LockAsync(string mobileNumber, string contractNumber, decimal tokenAmount, CancellationToken ct);
 
-    /// <summary>آزادسازی توکن‌های قرارداد پس از تسویه.</summary>
+    /// <summary>آزادسازی وثیقه پس از تسویه یا لغو/انقضای قرارداد امضاشده.</summary>
     Task ReleaseAsync(string mobileNumber, string contractNumber, decimal tokenAmount, CancellationToken ct);
+
+    /// <summary>
+    /// واریز توکن‌های خریده‌شده با اعتبار پیش‌خرید به حساب مشتری (پس از پرداخت قسط اول).
+    /// با contractNumber تکراری نباید دوباره واریز کند.
+    /// </summary>
+    Task CreditAsync(string mobileNumber, string contractNumber, decimal tokenAmount, CancellationToken ct);
 
     /// <summary>کسر توکن از موجودی آزاد مشتری بابت قسط؛ خروجی شماره پیگیری.</summary>
     Task<string> DebitAsync(string mobileNumber, string contractNumber, decimal tokenAmount, string description, CancellationToken ct);

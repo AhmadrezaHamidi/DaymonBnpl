@@ -7,11 +7,17 @@ public static class PersianNumber
 {
     private static readonly string Digits = "۰۱۲۳۴۵۶۷۸۹";
 
-    public static string Of(long value) =>
-        new(value.ToString("#,0", CultureInfo.InvariantCulture).Select(c => c switch
+    public static string Of(long value) => Persian(value.ToString("#,0", CultureInfo.InvariantCulture));
+
+    /// <summary>تعداد توکن (تا سه رقم اعشار، بدون صفر اضافه).</summary>
+    public static string Of(decimal value) => Persian(value.ToString("#,0.###", CultureInfo.InvariantCulture));
+
+    private static string Persian(string latin) =>
+        new(latin.Select(c => c switch
         {
             >= '0' and <= '9' => Digits[c - '0'],
             ',' => '٬',
+            '.' => '٫',
             _ => c,
         }).ToArray());
 

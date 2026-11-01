@@ -20,6 +20,8 @@ public sealed class BnplRequestConfiguration : IEntityTypeConfiguration<BnplRequ
         Percent(e.Property(x => x.UpfrontFeePercent));
         Percent(e.Property(x => x.LatePenaltyDailyPercent));
         Tokens(e.Property(x => x.TokenAmount));
+        Percent(e.Property(x => x.CollateralPercent));
+        Tokens(e.Property(x => x.CollateralTokenAmount));
         e.HasOne<BnplPlan>().WithMany().HasForeignKey(x => x.PlanId).OnDelete(DeleteBehavior.Restrict);
         e.HasOne<DiscountCode>().WithMany().HasForeignKey(x => x.DiscountCodeId).OnDelete(DeleteBehavior.Restrict);
         e.HasMany(x => x.Installments).WithOne().HasForeignKey(x => x.RequestId).OnDelete(DeleteBehavior.Cascade);
@@ -29,6 +31,8 @@ public sealed class BnplRequestConfiguration : IEntityTypeConfiguration<BnplRequ
         e.Ignore(x => x.PaidCount);
         e.Ignore(x => x.PaidPercent);
         e.Ignore(x => x.OwnedTokenAmount);
+        e.Ignore(x => x.NeedsCollateralRelease);
+        e.Ignore(x => x.NeedsTokenDelivery);
         e.HasIndex(x => x.ContractNumber).IsUnique();
         e.HasIndex(x => new { x.CustomerId, x.Status });
         e.HasIndex(x => new { x.Status, x.ExpiresAt });

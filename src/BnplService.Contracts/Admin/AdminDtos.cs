@@ -16,6 +16,7 @@ public sealed record BnplDashboardDto(
     long CollectedPenalty,
     long OutstandingTotal,
     long OverdueTotal,
+    /// <summary>جمع توکن وثیقهٔ مسدود قراردادهای فعال.</summary>
     decimal LockedTokens,
     int RefundRequiredPayments,
     long RefundRequiredTotal,
