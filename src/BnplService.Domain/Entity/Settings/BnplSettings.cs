@@ -36,11 +36,21 @@ public class BnplSettings : VersionedEntity
     /// </summary>
     public decimal CollateralPercent { get; private set; } = 100;
 
+    /// <summary>حداکثر درخواست ناتمام (امضانشده) هم‌زمان برای یک مشتری (US-4-05: «فهرست درخواست‌های ناتمام»).</summary>
+    public int MaxIncompleteRequestsPerCustomer { get; private set; } = 3;
+
+    /// <summary>«پیشنهادهای مبلغ» صفحهٔ درخواست (US-4-02)، ریال، جداشده با ویرگول.</summary>
+    public string SuggestedAmounts { get; private set; } = "50000000,100000000,200000000,500000000";
+
+    public IReadOnlyList<long> SuggestedAmountList =>
+        SuggestedAmounts.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(long.Parse).ToList();
+
     public DateTime? UpdatedAt { get; private set; }
     public Actor? UpdatedBy { get; private set; }
 
     public void Update(bool isEnabled, long minAmount, long maxAmount, long amountStep, int completionHours, int activationMinutes,
-        int gatewayPaymentMinutes, int maxActiveContracts, decimal collateralPercent, Actor by, DateTime at)
+        int gatewayPaymentMinutes, int maxActiveContracts, decimal collateralPercent, int maxIncompleteRequests,
+        IReadOnlyList<long> suggestedAmounts, Actor by, DateTime at)
     {
         if (minAmount <= 0 || maxAmount < minAmount) throw new BnplDomainException("بازهٔ مبلغ نامعتبر است (حداقل باید مثبت و کمتر از حداکثر باشد).");
         if (amountStep <= 0 || (maxAmount - minAmount) % amountStep != 0)
@@ -50,6 +60,11 @@ public class BnplSettings : VersionedEntity
         if (gatewayPaymentMinutes is < 5 or > 120) throw new BnplDomainException("مهلت پرداخت درگاهی باید بین ۵ تا ۱۲۰ دقیقه باشد.");
         if (maxActiveContracts is < 1 or > 100) throw new BnplDomainException("حداکثر قرارداد فعال باید بین ۱ تا ۱۰۰ باشد.");
         if (collateralPercent is < 1 or > 500) throw new BnplDomainException("درصد وثیقه باید بین ۱ تا ۵۰۰ باشد.");
+        if (maxIncompleteRequests is < 1 or > 20) throw new BnplDomainException("حداکثر درخواست ناتمام باید بین ۱ تا ۲۰ باشد.");
+        var suggested = suggestedAmounts.Distinct().Order().ToList();
+        if (suggested.Count is < 1 or > 10) throw new BnplDomainException("بین ۱ تا ۱۰ مبلغ پیشنهادی تعریف کنید.");
+        if (suggested.Any(a => a < minAmount || a > maxAmount || (a - minAmount) % amountStep != 0))
+            throw new BnplDomainException("هر مبلغ پیشنهادی باید در بازهٔ مبلغ و مضربی از گام مبلغ باشد.");
         IsEnabled = isEnabled;
         MinAmount = minAmount;
         MaxAmount = maxAmount;
@@ -59,6 +74,8 @@ public class BnplSettings : VersionedEntity
         GatewayPaymentMinutes = gatewayPaymentMinutes;
         MaxActiveContractsPerCustomer = maxActiveContracts;
         CollateralPercent = collateralPercent;
+        MaxIncompleteRequestsPerCustomer = maxIncompleteRequests;
+        SuggestedAmounts = string.Join(',', suggested);
         UpdatedAt = at;
         UpdatedBy = by;
         Bump();

@@ -159,13 +159,30 @@ public class CustomerFlowTests
     }
 
     [Fact]
-    public async Task Only_one_incomplete_request_at_a_time()
+    public async Task Incomplete_requests_are_listed_up_to_the_limit()
     {
         await using var host = await BnplTestHost.CreateAsync();
         await host.Ok(new CreateRequestCommand { Amount = 50_000_000 });
-        var second = await host.Send(new CreateRequestCommand { Amount = 60_000_000 });
-        Assert.Equal(409, second.StatusCode);
-        Assert.Contains("تکمیل نشده", second.Message);
+        await host.Ok(new CreateRequestCommand { Amount = 60_000_000 });
+        var third = await host.Ok(new CreateRequestCommand { Amount = 70_000_000 });
+        var fourth = await host.Send(new CreateRequestCommand { Amount = 80_000_000 });
+        Assert.Equal(409, fourth.StatusCode);
+        Assert.Contains("۳ درخواست تکمیل نشده", fourth.Message);
+
+        // تب «درخواست»: مبلغ، کارمزد، مهلت و شناسهٔ هر درخواست ناتمام
+        var tab = await host.Ok(new SearchMyRequestsQuery { Filter = MyRequestsFilter.Incomplete });
+        Assert.Equal(3, tab.TotalCount);
+        var newest = tab.Items[0];
+        Assert.Equal(third.Summary.Id, newest.Id);
+        Assert.Equal(70_000_000, newest.Amount);
+        Assert.Equal(third.TotalFee, newest.TotalFee);
+        Assert.Equal(BnplTestHost.Start.UtcDateTime.AddHours(24), newest.Deadline);
+
+        // حذف یکی ← جا برای درخواست جدید باز می‌شود؛ منقضی‌ها از فهرست بیرون می‌روند
+        await host.Ok(new CancelRequestCommand { Id = third.Summary.Id });
+        await host.Ok(new CreateRequestCommand { Amount = 80_000_000 });
+        host.Time.Advance(TimeSpan.FromHours(25));
+        Assert.Equal(0, (await host.Ok(new SearchMyRequestsQuery { Filter = MyRequestsFilter.Incomplete })).TotalCount);
     }
 
     [Fact]

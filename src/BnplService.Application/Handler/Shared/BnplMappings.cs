@@ -15,7 +15,7 @@ public static class BnplMappings
         };
         return new BnplRequestListItemDto(
             r.Id, r.ContractNumber, r.Status, BnplTitles.Of(r.Status), r.PlanTitle, r.Amount, r.InstallmentCount, r.PaidCount, r.FeePercent,
-            r.InstallmentAmount, r.TokenAmount, r.CreatedAt, r.ActivatedAt, last?.DueDate, last is null ? null : Jalali.Format(last.DueDate),
+            r.TotalFee, r.InstallmentAmount, r.TokenAmount, r.CreatedAt, r.ActivatedAt, last?.DueDate, last is null ? null : Jalali.Format(last.DueDate),
             deadline, next is null ? null : r.ToNext(next, today), r.IsOverdue(today), r.RowVersion);
     }
 

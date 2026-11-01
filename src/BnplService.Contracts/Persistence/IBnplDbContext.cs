@@ -13,6 +13,8 @@ public interface IBnplDbContext
     DbSet<DiscountCode> DiscountCodes { get; }
     DbSet<BnplRequest> Requests { get; }
     DbSet<BnplPayment> Payments { get; }
+    DbSet<CustomerProfile> CustomerProfiles { get; }
+    DbSet<PageMessage> PageMessages { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

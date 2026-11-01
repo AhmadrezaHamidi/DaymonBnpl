@@ -16,6 +16,7 @@
   <ItemGroup>
     <Using Include="BnplService.Domain.Entity.Common" />
     <Using Include="BnplService.Domain.Entity.Settings" />
+    <Using Include="BnplService.Domain.Entity.Customers" />
     <Using Include="BnplService.Domain.Entity.Requests" />
     <Using Include="BnplService.Domain.Entity.Payments" />
     <Using Include="BnplService.Domain.Enums" />

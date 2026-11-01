@@ -42,3 +42,16 @@ public enum PaymentStatus : byte
 }
 
 public enum ActorType : byte { Customer = 1, Admin = 2, System = 3 }
+
+/// <summary>نوع «باکس پیام» صفحه (US-5)؛ رنگ پیش‌فرض باکس از همین تعیین می‌شود.</summary>
+public enum PageMessageKind : byte
+{
+    /// <summary>راهنما</summary>
+    Guide = 1,
+
+    /// <summary>هشدار</summary>
+    Warning = 2,
+
+    /// <summary>اطلاع‌رسانی</summary>
+    Notice = 3,
+}

@@ -19,6 +19,7 @@
     <Using Include="Xunit" />
     <Using Include="BnplService.Domain.Entity.Common" />
     <Using Include="BnplService.Domain.Entity.Settings" />
+    <Using Include="BnplService.Domain.Entity.Customers" />
     <Using Include="BnplService.Domain.Entity.Requests" />
     <Using Include="BnplService.Domain.Entity.Payments" />
     <Using Include="BnplService.Domain.Enums" />
@@ -31,6 +32,7 @@
     <Using Include="BnplService.Contracts.Providers" />
     <Using Include="BnplService.Contracts.Requests" />
     <Using Include="BnplService.Contracts.Settings" />
+    <Using Include="BnplService.Contracts.Profile" />
     <Using Include="BnplService.Contracts.Persistence" />
     <Using Include="BnplService.Application.Common" />
     <Using Include="BnplService.Application.Authorization" />

@@ -21,10 +21,12 @@ public static class BnplPermissionKeys
 
     public const string DiscountsView = "bnpl.discounts.view";
     public const string DiscountsEdit = "bnpl.discounts.edit";
+    public const string MessagesView = "bnpl.messages.view";
+    public const string MessagesEdit = "bnpl.messages.edit";
 
     public static IReadOnlyList<string> All { get; } =
     [
         DashboardView, RequestsView, RequestsTerminate, PenaltiesWaive, PaymentsView, PaymentsManual, PaymentsRefund,
-        SettingsView, SettingsEdit, DiscountsView, DiscountsEdit,
+        SettingsView, SettingsEdit, DiscountsView, DiscountsEdit, MessagesView, MessagesEdit,
     ];
 }

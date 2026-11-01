@@ -13,12 +13,15 @@ public sealed class CreateRequestCommandHandler(IBnplDbContext db, ITokenPricePr
         if (!settings.IsEnabled) throw new BnplDomainException("ثبت درخواست پیش‌خرید اقساطی در حال حاضر امکان‌پذیر نیست.");
         settings.EnsureAmountAllowed(request.Amount);
 
+        var incomplete = 0;
         foreach (var open in await RequestsWithDetails()
                      .Where(r => r.CustomerId == me.UserId && BnplRequest.IncompleteStatuses.Contains(r.Status)).ToListAsync(ct))
         {
-            if (!await ExpireIfDueAsync(open, ct))
-                throw new BnplDomainException("یک درخواست تکمیل نشده دارید؛ آن را ادامه دهید یا لغو کنید.", 409);
+            if (!await ExpireIfDueAsync(open, ct)) incomplete++;
         }
+        if (incomplete >= settings.MaxIncompleteRequestsPerCustomer)
+            throw new BnplDomainException(
+                $"{PersianNumber.Of(settings.MaxIncompleteRequestsPerCustomer)} درخواست تکمیل نشده دارید؛ یکی را ادامه دهید یا حذف کنید.", 409);
         var active = await Db.Requests.CountAsync(r => r.CustomerId == me.UserId && r.Status == BnplRequestStatus.Active, ct);
         if (active >= settings.MaxActiveContractsPerCustomer)
             throw new BnplDomainException($"حداکثر {PersianNumber.Of(settings.MaxActiveContractsPerCustomer)} قرارداد فعال هم‌زمان مجاز است.");

@@ -2,7 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BnplService.Application.Handler.Customer.Profile.Commands.UpsertProfileAddress;
 
-/// <summary>فرم «نشانی و اطلاعات تماس» (دایادایموند: profile/upsertAddress)؛ در قرارداد استفاده می‌شود.</summary>
+/// <summary>
+/// فرم «نشانی و اطلاعات تماس» (دایادایموند: profile/upsertAddress)؛ در قرارداد استفاده می‌شود.
+/// استان باید از فهرست GetProvinces باشد و تلفن ثابت با پیش‌شمارهٔ همان استان شروع شود.
+/// </summary>
 public sealed record UpsertProfileAddressCommand : BnplBaseCommand<BnplMessageResponse<CustomerProfileStatusDto>>
 {
     [Required, StringLength(50, MinimumLength = 2)] public string Province { get; init; } = null!;

@@ -9,6 +9,7 @@ public sealed class GetConfigQueryHandler(IBnplDbContext db, ITokenPriceProvider
         var plans = await Db.Plans.Where(p => p.IsActive).OrderBy(p => p.SortOrder).ThenBy(p => p.Id).ToListAsync(ct);
         var price = await prices.GetAsync(ct);
         return Ok(new BnplConfigDto(settings.IsEnabled, settings.MinAmount, settings.MaxAmount, settings.AmountStep,
-            settings.ActivationMinutes, plans.Select(PlanDto.Of).ToList(), price.AssetCode, price.PriceRial));
+            settings.ActivationMinutes, plans.Select(PlanDto.Of).ToList(), price.AssetCode, price.PriceRial,
+            settings.SuggestedAmountList, settings.CollateralPercent));
     }
 }

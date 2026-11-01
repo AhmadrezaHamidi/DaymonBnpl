@@ -3,9 +3,9 @@ using BnplService.Contracts.Settings;
 
 namespace BnplService.Contracts.Requests;
 
-/// <summary>صفحهٔ «درخواست جدید»: بازهٔ اسلایدر، طرح‌ها و قیمت لحظه‌ای توکن.</summary>
+/// <summary>صفحهٔ «درخواست جدید»: بازهٔ اسلایدر، مبلغ‌های پیشنهادی، طرح‌ها و قیمت لحظه‌ای توکن.</summary>
 public sealed record BnplConfigDto(bool IsEnabled, long MinAmount, long MaxAmount, long AmountStep, int ActivationMinutes,
-    IReadOnlyList<PlanDto> Plans, string AssetCode, long TokenPrice);
+    IReadOnlyList<PlanDto> Plans, string AssetCode, long TokenPrice, IReadOnlyList<long> SuggestedAmounts, decimal CollateralPercent);
 
 /// <summary>کارت‌های «مبلغ هر قسط / تعداد توکن» و «شرایط وام».</summary>
 public sealed record QuoteDto(
@@ -29,7 +29,7 @@ public sealed record NextInstallmentDto(int Number, string Title, long Amount, l
 /// <summary>کارت قرارداد در «تاریخچه درخواست‌ها» و درخواست تکمیل‌نشده.</summary>
 public sealed record BnplRequestListItemDto(
     long Id, string ContractNumber, BnplRequestStatus Status, string StatusTitle, string PlanTitle, long Amount, int InstallmentCount,
-    int PaidCount, decimal FeePercent, long InstallmentAmount, decimal TokenAmount, DateTime CreatedAt, DateTime? ActivatedAt,
+    int PaidCount, decimal FeePercent, long TotalFee, long InstallmentAmount, decimal TokenAmount, DateTime CreatedAt, DateTime? ActivatedAt,
     DateOnly? EndDate, string? EndDateJalali, DateTime? Deadline, NextInstallmentDto? NextInstallment, bool IsOverdue,
     string RowVersion);
 

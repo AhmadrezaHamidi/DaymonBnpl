@@ -10,6 +10,8 @@ public class BnplDbContext(DbContextOptions<BnplDbContext> options) : DbContext(
     public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
     public DbSet<BnplRequest> Requests => Set<BnplRequest>();
     public DbSet<BnplPayment> Payments => Set<BnplPayment>();
+    public DbSet<CustomerProfile> CustomerProfiles => Set<CustomerProfile>();
+    public DbSet<PageMessage> PageMessages => Set<PageMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
