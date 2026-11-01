@@ -32,7 +32,7 @@ public sealed record CustomerAddressInput(string PhoneNumber, string Province, s
 
 /// <summary>
 /// درگاه پرداخت قسط. ⚠ مستند دایادایموند فقط «خرید توکن» (buy/request) را دارد، نه پرداخت مبلغ دلخواه؛
-/// تا API پرداخت قسط مشخص شود، Infrastructure یک درگاه آزمایشی (Sandbox) دارد که فقط در توسعه فعال است.
+/// پیاده‌سازی فعلی روی سرویس پیشنهادی bnpl/payment/* است که فعلاً فقط mock (tools/DayaDiamond.Mock) آن را دارد.
 /// </summary>
 public interface IBnplPaymentGateway
 {
@@ -77,6 +77,9 @@ public interface ITokenCustody
     /// </summary>
     Task CreditAsync(string mobileNumber, string contractNumber, decimal tokenAmount, CancellationToken ct);
 
-    /// <summary>کسر توکن از موجودی آزاد مشتری بابت قسط؛ خروجی شماره پیگیری.</summary>
-    Task<string> DebitAsync(string mobileNumber, string contractNumber, decimal tokenAmount, string description, CancellationToken ct);
+    /// <summary>
+    /// کسر توکن از موجودی آزاد مشتری بابت قسط؛ خروجی شماره پیگیری.
+    /// reference برای هر پرداخت یکتاست («شمارهٔ قرارداد/شناسهٔ پرداخت») تا تکرار همان پرداخت دوباره کسر نکند.
+    /// </summary>
+    Task<string> DebitAsync(string mobileNumber, string reference, decimal tokenAmount, string description, CancellationToken ct);
 }

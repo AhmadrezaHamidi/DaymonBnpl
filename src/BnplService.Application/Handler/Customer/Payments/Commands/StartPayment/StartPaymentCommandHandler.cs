@@ -75,7 +75,7 @@ public sealed class StartPaymentCommandHandler(
         string tracking;
         try
         {
-            tracking = await custody.DebitAsync(me.MobileNumber, request.ContractNumber, tokens, payment.Description, ct);
+            tracking = await custody.DebitAsync(me.MobileNumber, $"{request.ContractNumber}/{payment.Id}", tokens, payment.Description, ct);
         }
         catch (BnplProviderException ex)
         {

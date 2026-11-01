@@ -13,6 +13,8 @@ public static class ServiceCollectionExtensions
         services.Configure<DayaDiamondOptions>(configuration.GetSection(DayaDiamondOptions.SectionName));
         services.AddSingleton<DayaDiamondTokenStore>();
         services.AddHttpClient<IDayaDiamondClient, DayaDiamondClient>(client => client.Timeout = TimeSpan.FromSeconds(30));
+        // سرویس‌های پیشنهادی پیش‌خرید روی همان HttpClient و همان توکن.
+        services.AddTransient<IDayaDiamondBnplApi>(sp => (DayaDiamondClient)sp.GetRequiredService<IDayaDiamondClient>());
         return services;
     }
 }

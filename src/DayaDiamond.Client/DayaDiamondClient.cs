@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace DayaDiamond.Client;
 
-public sealed class DayaDiamondClient : IDayaDiamondClient
+public sealed class DayaDiamondClient : IDayaDiamondClient, IDayaDiamondBnplApi
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -101,6 +101,33 @@ public sealed class DayaDiamondClient : IDayaDiamondClient
     public Task ValidateWithdrawRequestAsync(decimal tokenAmount, string phoneNumber, CancellationToken ct = default)
         => GetAsync<JsonElement?>(
             $"withdraw/validateRequest?tokenAmount={Num(tokenAmount)}&phoneNumber={Uri.EscapeDataString(phoneNumber)}", ct);
+
+    // ---------- پیش‌خرید اقساطی (پیشنهادی؛ IDayaDiamondBnplApi) ----------
+
+    public async Task<WalletBalance> GetWalletBalanceAsync(string phoneNumber, CancellationToken ct = default)
+        => await GetAsync<WalletBalance>($"bnpl/wallet/balance?phoneNumber={Uri.EscapeDataString(phoneNumber)}", ct)
+           ?? throw new DayaDiamondException("پاسخ موجودی خالی بود.");
+
+    public Task LockTokensAsync(WalletOperationRequest request, CancellationToken ct = default)
+        => PostAsync<JsonElement?>("bnpl/wallet/lock", request, ct);
+
+    public Task ReleaseTokensAsync(WalletOperationRequest request, CancellationToken ct = default)
+        => PostAsync<JsonElement?>("bnpl/wallet/release", request, ct);
+
+    public Task CreditTokensAsync(WalletOperationRequest request, CancellationToken ct = default)
+        => PostAsync<JsonElement?>("bnpl/wallet/credit", request, ct);
+
+    public async Task<WalletOperationResult> DebitTokensAsync(WalletOperationRequest request, CancellationToken ct = default)
+        => await PostAsync<WalletOperationResult>("bnpl/wallet/debit", request, ct)
+           ?? throw new DayaDiamondException("پاسخ کسر توکن خالی بود.");
+
+    public async Task<BuyRequestResult> CreateInstallmentPaymentAsync(InstallmentPaymentRequest request, CancellationToken ct = default)
+        => await PostAsync<BuyRequestResult>("bnpl/payment/request", request, ct)
+           ?? throw new DayaDiamondException("پاسخ درخواست پرداخت خالی بود.");
+
+    public async Task<InstallmentPaymentStatus> GetInstallmentPaymentStatusAsync(string paymentExtId, CancellationToken ct = default)
+        => await GetAsync<InstallmentPaymentStatus>($"bnpl/payment/status?paymentExtId={Uri.EscapeDataString(paymentExtId)}", ct)
+           ?? throw new DayaDiamondException("پاسخ وضعیت پرداخت خالی بود.");
 
     // ---------- Plumbing ----------
 

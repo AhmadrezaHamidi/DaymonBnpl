@@ -18,6 +18,14 @@ public sealed class BnplTestHost : IAsyncDisposable
 {
     public static readonly DateTimeOffset Start = new(2026, 10, 28, 8, 0, 0, TimeSpan.Zero);
 
+    /// <summary>
+    /// اگر این متغیر محیطی (رشتهٔ اتصال SQL Server بدون Database) مقدار داشته باشد، هر تست روی یک دیتابیس تازهٔ SQL Server
+    /// با Migrationهای واقعی اجرا می‌شود و بعد پاک می‌شود؛ وگرنه SQLite درون‌حافظه.
+    /// </summary>
+    public const string SqlServerVariable = "BNPL_TEST_SQLSERVER";
+
+    private static readonly string? SqlServer = Environment.GetEnvironmentVariable(SqlServerVariable);
+
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
     private readonly ServiceProvider _services;
 
@@ -29,14 +37,22 @@ public sealed class BnplTestHost : IAsyncDisposable
     public TestCurrentCustomer Customer { get; } = new();
     public TestCurrentUser Admin { get; } = new();
 
-    private BnplTestHost()
+    private BnplTestHost(Action<IServiceCollection>? configure)
     {
-        _connection.Open();
         var services = new ServiceCollection();
         services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
         services.AddSingleton<TimeProvider>(Time);
         services.AddBnplApplication();
-        services.AddDbContext<BnplDbContext>(o => o.UseSqlite(_connection));
+        if (string.IsNullOrEmpty(SqlServer))
+        {
+            _connection.Open();
+            services.AddDbContext<BnplDbContext>(o => o.UseSqlite(_connection));
+        }
+        else
+        {
+            var connection = $"{SqlServer.TrimEnd(';')};Database=BnplTest_{Guid.NewGuid():N}";
+            services.AddDbContext<BnplDbContext>(o => o.UseSqlServer(connection, BnplModel.SqlServer));
+        }
         services.AddScoped<IBnplDbContext>(sp => sp.GetRequiredService<BnplDbContext>());
         services.AddSingleton<ITokenPriceProvider>(Price);
         services.AddSingleton<ICustomerProfileProvider>(Profiles);
@@ -49,15 +65,18 @@ public sealed class BnplTestHost : IAsyncDisposable
             o.PublicBaseUrl = "https://bnpl.test";
             o.AllowedReturnUrlPrefixes = ["https://app.test/"];
         });
+        configure?.Invoke(services);   // مثلاً جایگزینی ارائه‌دهنده‌های جعلی با adapterهای واقعی دایادایموند روی mock
         _services = services.BuildServiceProvider();
     }
 
-    public static async Task<BnplTestHost> CreateAsync()
+    /// <param name="configure">ثبت‌های اضافه پس از پیش‌فرض‌ها؛ ثبت آخر برنده است.</param>
+    public static async Task<BnplTestHost> CreateAsync(Action<IServiceCollection>? configure = null)
     {
-        var host = new BnplTestHost();
+        var host = new BnplTestHost(configure);
         await using var scope = host._services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<BnplDbContext>();
-        await db.Database.EnsureCreatedAsync();
+        if (db.Database.IsSqlServer()) await db.Database.MigrateAsync();
+        else await db.Database.EnsureCreatedAsync();
         await BnplSeed.EnsureSeedAsync(db);
         return host;
     }
@@ -76,6 +95,12 @@ public sealed class BnplTestHost : IAsyncDisposable
         return response.Data!;
     }
 
+    public async Task<TResult> Service<TService, TResult>(Func<TService, Task<TResult>> use) where TService : notnull
+    {
+        await using var scope = _services.CreateAsyncScope();
+        return await use(scope.ServiceProvider.GetRequiredService<TService>());
+    }
+
     public async Task<TResult> Db<TResult>(Func<BnplDbContext, Task<TResult>> query)
     {
         await using var scope = _services.CreateAsyncScope();
@@ -84,6 +109,11 @@ public sealed class BnplTestHost : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (!string.IsNullOrEmpty(SqlServer))
+        {
+            await using var scope = _services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<BnplDbContext>().Database.EnsureDeletedAsync();
+        }
         await _services.DisposeAsync();
         await _connection.DisposeAsync();
     }
@@ -187,10 +217,10 @@ public sealed class FakeCustody : ITokenCustody
         return Task.CompletedTask;
     }
 
-    public Task<string> DebitAsync(string mobileNumber, string contractNumber, decimal tokenAmount, string description, CancellationToken ct)
+    public Task<string> DebitAsync(string mobileNumber, string reference, decimal tokenAmount, string description, CancellationToken ct)
     {
         FreeBalance -= tokenAmount;
-        Debited.Add((contractNumber, tokenAmount));
+        Debited.Add((reference, tokenAmount));
         return Task.FromResult("TOK" + Debited.Count);
     }
 }

@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- زیرساخت BNPL. ساختار مثل facilityservice: DBContext، Configuration، Migrations، Seed، Providers (دایادایموند و Sandbox). -->
+  <!-- زیرساخت BNPL. ساختار مثل facilityservice: DBContext، Configuration، Migrations، Seed، Providers (دایادایموند). -->
   <PropertyGroup><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><RootNamespace>BnplService.Infrastructure</RootNamespace></PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

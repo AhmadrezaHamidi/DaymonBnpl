@@ -10,10 +10,13 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="8.10.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.10" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/BnplService.Application/BnplService.Application.csproj" />
     <ProjectReference Include="../../src/BnplService.Infrastructure/BnplService.Infrastructure.csproj" />
+    <!-- سرور mock دایادایموند، درون‌پروسه با WebApplicationFactory -->
+    <ProjectReference Include="../../tools/DayaDiamond.Mock/DayaDiamond.Mock.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

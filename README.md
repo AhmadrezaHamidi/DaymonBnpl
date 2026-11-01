@@ -11,8 +11,10 @@
 | `src/BnplService.Domain` | موجودیت‌ها (درخواست، قسط، پرداخت، تنظیمات، پلن، کد تخفیف)، قوانین محاسبه، تاریخ شمسی، کد ملی و شبا |
 | `src/BnplService.Contracts` | DTOها، `IBnplDbContext` و پورت‌های ارائه‌دهنده (قیمت، پروفایل، درگاه، نگهداری توکن) |
 | `src/BnplService.Application` | Handlerهای MediatR برای مشتری، پنل ادمین و کار دوره‌ای (Maintenance) |
-| `src/BnplService.Infrastructure` | EF Core (SqlServer و Sqlite)، پیکربندی جدول‌ها و Seed |
-| `test/BnplService.Tests` | ۶۵ تست: محاسبات فیگما، قوانین، و سناریوهای کامل مشتری و ادمین روی SQLite درون‌حافظه |
+| `src/BnplService.Infrastructure` | EF Core (SqlServer و Sqlite)، Migrationها، Seed، و adapterهای دایادایموند برای پورت‌ها (`AddBnplInfrastructure`) |
+| `test/BnplService.Tests` | ۷۶ تست: محاسبات فیگما، قوانین، سناریوهای مشتری و ادمین، و سناریوهای سرتاسری روی mock دایادایموند |
+| `tools/DayaDiamond.Mock` | شبیه‌ساز سرور دایادایموند ([راهنما](tools/DayaDiamond.Mock/README.md)) |
+| `Database/bnpl_migrations.sql` | اسکریپت idempotent همهٔ Migrationها برای اجرای دستی روی SQL Server |
 | `samples/DayaDiamond.Sample` | برنامهٔ نمونه‌ای که کل مسیر کلاینت دایادایموند را اجرا می‌کند |
 | `docs/` | مستند API دایادایموند، PDF فیگما، یادداشت‌ها و خروجی چت‌های پروژه |
 
@@ -61,13 +63,34 @@
 dotnet test
 ```
 
+به‌طور پیش‌فرض تست‌ها روی SQLite درون‌حافظه اجرا می‌شوند. برای اجرا روی SQL Server واقعی، رشتهٔ اتصال **بدون Database** را بدهید؛
+هر تست یک دیتابیس تازه می‌سازد، Migrationها را اعمال می‌کند و در پایان پاکش می‌کند:
+
+```bash
+docker run -d --name bnpl-sql -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD="$SA_PASSWORD" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+BNPL_TEST_SQLSERVER="Server=localhost,1433;User Id=sa;Password=$SA_PASSWORD;TrustServerCertificate=True" dotnet test
+```
+
+ساخت یا به‌روزرسانی دیتابیس و اسکریپت:
+
+```bash
+dotnet tool install -g dotnet-ef --version 8.0.10
+BNPL_CONNECTION="Server=localhost,1433;Database=Bnpl;User Id=sa;Password=$SA_PASSWORD;TrustServerCertificate=True" \
+  dotnet ef database update -p src/BnplService.Infrastructure
+dotnet ef migrations script --idempotent -p src/BnplService.Infrastructure -o Database/bnpl_migrations.sql
+```
+
+همهٔ جدول‌ها در اسکیمای `bnpl` هستند. Migration فقط جدول‌ها را می‌سازد و `BnplSeed.EnsureSeedAsync` تنظیمات و پلن پیش‌فرض را هنگام شروع برنامه می‌سازد.
+
+تست‌های پوشهٔ `test/BnplService.Tests/DayaDiamond` کلاینت و adapterهای واقعی را روی mock دایادایموند (درون همان پروسه) اجرا می‌کنند:
+پروفایل، قیمت، امضا و قفل وثیقه، پرداخت از درگاه mock، واریز توکن، پرداخت توکنی، تسویه و آزادسازی وثیقه، کمبود وثیقه و خرید توکن، قطعی سرویس.
+
 ## هنوز نوشته نشده
 
 طبق تصمیم، کار در این نقطه متوقف شد. این بخش‌ها مانده است:
 
-- لایهٔ `Api` (کنترلرها و احراز هویت مشتری و پنل از طریق Identity `Internal/Authorization/Resolve`) و `IoC`.
-- پیاده‌سازی پورت‌ها روی دایادایموند، و نسخهٔ Sandbox آن‌ها. فعلاً فقط در تست‌ها نسخهٔ جعلی دارند.
-- Migrationهای EF و Worker که `RunMaintenanceCommand` را دوره‌ای اجرا کند.
+- لایهٔ `Api` (کنترلرها و احراز هویت مشتری و پنل از طریق Identity `Internal/Authorization/Resolve`).
+- Worker که `RunMaintenanceCommand` را دوره‌ای اجرا کند.
 
 ## سؤال‌های باز از دایادایموند
 
@@ -76,4 +99,5 @@ dotnet test
 - پرداخت قسط از درگاه و verify آن
 - موجودی آزاد، قفل و آزادسازی وثیقه، واریز توکن خریده‌شده و برداشت توکن کاربر
 
-برای همین در کد به شکل پورت (`IBnplPaymentGateway` و `ITokenCustody`) تعریف شده‌اند.
+برای همین در کد به شکل پورت (`IBnplPaymentGateway` و `ITokenCustody`) تعریف شده‌اند. adapterهای فعلی روی سرویس‌های پیشنهادی
+`bnpl/wallet/*` و `bnpl/payment/*` نوشته شده‌اند که فعلاً فقط mock آن‌ها را دارد؛ شکل نهایی باید با دایادایموند هماهنگ شود.
