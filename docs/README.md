@@ -2,6 +2,7 @@
 
 | فایل | توضیح |
 |---|---|
+| [requirements.md](requirements.md) | سند نیازمندی‌های پیش‌خرید اقساطی و نگاشت هر نیازمندی به کد و تست |
 | [dayadiamond-api.md](dayadiamond-api.md) | متن اصلی مستند API دایادایموند |
 | [dayadiamond-client-README.md](dayadiamond-client-README.md) | راهنمای کلاینت C# دایادایموند و فرض‌ها |
 | [figma/](figma/) | PDF فیگمای اپ و یادداشت‌های بخش پیش‌خرید اقساطی |
